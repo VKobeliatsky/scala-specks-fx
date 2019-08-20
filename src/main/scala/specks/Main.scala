@@ -8,7 +8,7 @@ import scalafx.application._
 import scalafx.scene._
 
 object Main extends JFXApp {
-  private val model = new SpecksModel(3, 4)
+  private val model = new SpecksModel(4, 4)
   private val view = new SpecksView(model)
 
   view.onClick {
