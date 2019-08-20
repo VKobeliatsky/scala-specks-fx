@@ -5,29 +5,45 @@ import scala.util.Random
 
 class SpecksModel(val width: Int, val height: Int) {
 
-  private val specks: Array[Speck] = mkOrdered().toArray
+  private val _specks: Array[Speck] = mkOrdered().toArray
 
-  def isDefinedAt(i: Int, j: Int): Boolean = i * width + j < width * height
+  def specks: Array[Speck] = _specks.clone
+  def specksWithPositions: Seq[(Speck, Int, Int)] =
+    _specks.zipWithIndex.map {case (speck, index) =>
+      (speck, toCol(index), toRow(index))
+  }
 
-  def apply(i: Int, j: Int): Speck = specks(i * width + j)
+  def isDefinedAt(col: Int, row: Int): Boolean = col < width && row < height
+
+  def apply(col: Int, row: Int): Option[Speck] =
+    if (isDefinedAt(col, row)) Option(_specks(toIndex(col, row)))
+    else None
+
+  def apply(speck: Speck): Option[(Int, Int)] = {
+    val index = _specks indexOf speck
+    if (index >= 0)
+      Option((toCol(index), toRow(index)))
+    else
+      None
+  }
 
   def shuffle(): this.type = {
     val ordered = mkOrdered()
-    specks.zipWithIndex.foreach({case (_, index) =>
+    _specks.indices.foreach(index => {
       val orderedIndex = Random.nextInt(ordered.length)
       val speck = ordered(orderedIndex)
-      specks(index) = speck
+      _specks(index) = speck
       ordered.remove(orderedIndex)
     })
     this
   }
 
   def move(target: Value): this.type = {
-    val targetAt = specks.indexWhere({
+    val targetAt = _specks.indexWhere({
       case Value(value) if value == target.value => true
       case _ => false
     })
-    val cursorAt = specks.indexWhere({
+    val cursorAt = _specks.indexWhere({
       case Empty() => true
       case _ => false
     })
@@ -40,8 +56,8 @@ class SpecksModel(val width: Int, val height: Int) {
           targetAt - width == cursorAt
         )
     ) {
-      specks(cursorAt) = specks(targetAt)
-      specks(targetAt) = Empty()
+      _specks(cursorAt) = _specks(targetAt)
+      _specks(targetAt) = Empty()
     }
 
     this
@@ -50,15 +66,25 @@ class SpecksModel(val width: Int, val height: Int) {
   private def mkOrdered(): ArrayBuffer[Speck] = {
     val ordered = new ArrayBuffer[Speck]()
 
-    for(i <- 0 until width)
-      for(j <- 0 until height) {
-        val pos = i * width + j
-        ordered += Value(pos + 1)
-      }
+    for(
+      row <- 0 until height;
+      col <- 0 until width
+    ) {
+      val pos = toIndex(col, row)
+      ordered += Value(pos + 1)
+    }
 
     ordered(ordered.length - 1) = Empty()
 
     ordered
   }
 
+  private def toIndex(col: Int, row: Int): Int =
+    row * width + col
+
+  private def toCol(index: Int): Int =
+    index % width
+
+  private def toRow(index: Int): Int =
+    index / width
 }
