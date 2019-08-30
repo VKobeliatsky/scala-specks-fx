@@ -92,21 +92,6 @@ class SpeckView(initial: SpeckView.Data)
     pane.onMouseClicked = null
   }
 
-  private def ensureTransition: TranslateTransition = currentTransition getOrElse {
-    val nextTransition = new TranslateTransition(
-      SpeckView.TRANSITION_DURATION, pane
-    ) {
-      onFinished = _ => currentTransition = None
-    }
-
-    nextTransition.fromX = SpeckView.getXPos(data)
-    nextTransition.fromY = SpeckView.getYPos(data)
-
-    currentTransition = Some(nextTransition)
-
-    nextTransition
-  }
-
   private def translate(next: SpeckView.Data): Unit = {
     val nextTransition = ensureTransition
 
@@ -124,4 +109,26 @@ class SpeckView(initial: SpeckView.Data)
     if (currentTransition.isEmpty) for {
       handler <- clickHandler
     } handler(data.speck)
+
+  private def ensureTransition: TranslateTransition = {
+    val transition = currentTransition getOrElse newTransition
+
+    transition.onFinished = _ => currentTransition = None
+    currentTransition = Some(transition)
+
+    transition
+  }
+
+  private def newTransition: TranslateTransition = {
+    val transition = new TranslateTransition(
+      SpeckView.TRANSITION_DURATION,
+      pane
+    )
+
+    transition.fromX = SpeckView.getXPos(data)
+    transition.fromY = SpeckView.getYPos(data)
+
+    transition
+  }
+
 }

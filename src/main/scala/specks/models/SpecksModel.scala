@@ -38,29 +38,31 @@ class SpecksModel(val width: Int, val height: Int) {
     this
   }
 
-  def move(target: Value): this.type = {
-    val targetAt = _specks.indexWhere({
-      case Value(value) if value == target.value => true
-      case _ => false
-    })
-    val cursorAt = _specks.indexWhere({
-      case Empty() => true
-      case _ => false
-    })
+  def move(speck: Speck): this.type = speck match {
+    case Empty() => this
+    case Value(target) =>
+      val targetAt = _specks.indexWhere({
+        case Value(value) if value == target => true
+        case _ => false
+      })
+      val cursorAt = _specks.indexWhere({
+        case Empty() => true
+        case _ => false
+      })
 
-    if (
-      targetAt >= 0 && (
-        targetAt + 1 == cursorAt ||
-          targetAt - 1 == cursorAt ||
-          targetAt + width == cursorAt ||
-          targetAt - width == cursorAt
-        )
-    ) {
-      _specks(cursorAt) = _specks(targetAt)
-      _specks(targetAt) = Empty()
-    }
+      if (
+        targetAt >= 0 && (
+          targetAt + 1 == cursorAt ||
+            targetAt - 1 == cursorAt ||
+            targetAt + width == cursorAt ||
+            targetAt - width == cursorAt
+          )
+      ) {
+        _specks(cursorAt) = _specks(targetAt)
+        _specks(targetAt) = Empty()
+      }
 
-    this
+      this
   }
 
   private def mkOrdered(): ArrayBuffer[Speck] = {

@@ -12,8 +12,8 @@ object Main extends JFXApp {
   private val view = new SpecksView(model)
 
   view.onClick {
-    case Value(value) =>
-      model.move(Value(value))
+    case speck@Value(_) =>
+      model.move(speck)
       view.render(model)
     case Empty() =>
       model.shuffle()
