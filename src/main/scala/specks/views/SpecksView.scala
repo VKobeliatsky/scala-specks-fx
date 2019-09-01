@@ -4,29 +4,51 @@ import scalafx.scene.layout.Pane
 import specks.models._
 
 import scala.collection._
+import scala.language.implicitConversions
 
 object SpecksView {
+
+  case class Data(
+                   specks: Seq[SpeckWithPosition],
+                   width: Int,
+                   height: Int
+                 )
+
+  object Data {
+    implicit def fromModel(model: SpecksModel): Data =
+      Data(
+        model.specksWithPositions,
+        model.width,
+        model.height
+      )
+  }
+
+  type SpeckWithPosition = (Speck, Int, Int)
+
+  val INITIAL_DATA: Data = Data(Seq(), 0, 0)
   val PADDING = 15
   val SPECK_MARGIN = 15
-  def getWidth(model: SpecksModel): Double =
-    SpecksView.PADDING + model.width * (SpeckView.WIDTH + SpecksView.SPECK_MARGIN)
-  def getHeight(model: SpecksModel): Double =
-    SpecksView.PADDING + model.height * (SpeckView.HEIGHT + SpecksView.SPECK_MARGIN)
+
+  def getWidth(data: Data): Double =
+    SpecksView.PADDING + data.width * (SpeckView.WIDTH + SpecksView.SPECK_MARGIN)
+
+  def getHeight(data: Data): Double =
+    SpecksView.PADDING + data.height * (SpeckView.HEIGHT + SpecksView.SPECK_MARGIN)
+
 }
 
-class SpecksView(initial: SpecksModel)
-  extends BaseView [SpecksModel, Pane] {
+final class SpecksView
+  extends BaseView [SpecksView.Data, Pane](SpecksView.INITIAL_DATA) {
 
   private var clickHandler: Option[Speck => Unit] = None
 
   val root: Pane = new Pane
   val speckViews: mutable.Map[Speck, SpeckView] = mutable.Map()
 
-  render(initial)
-
-  def render(model: SpecksModel): Unit = {
-    setSize(model)
-    updateSpeckViews(model)
+  override def render(next: SpecksView.Data): Unit = {
+    setSize(next)
+    updateSpeckViews(next)
+    super.render(next)
   }
 
   def onClick(handler: Speck => Unit): Unit =
@@ -35,15 +57,18 @@ class SpecksView(initial: SpecksModel)
   override def unmount(): Unit =
     for (view <- speckViews.values) view.unmount()
 
-  private def setSize(model: SpecksModel): Unit =
-    root.setPrefSize(SpecksView.getWidth(model), SpecksView.getHeight(model))
+  private def setSize(next: SpecksView.Data): Unit =
+    root.setPrefSize(
+      SpecksView.getWidth(next),
+      SpecksView.getHeight(next)
+    )
 
-  private def updateSpeckViews(model: SpecksModel): Unit = {
+  private def updateSpeckViews(next: SpecksView.Data): Unit = {
     val updated: mutable.Set[Speck] = mutable.Set()
     val created: mutable.Set[Speck] = mutable.Set()
 
     for (
-      (speck, col, row) <- model.specksWithPositions
+      (speck, col, row) <- next.specks
     ) if (
       speckViews contains speck
     ) {
@@ -51,9 +76,10 @@ class SpecksView(initial: SpecksModel)
       view render SpeckView.Data(speck, col, row)
       updated add speck
     } else {
-      val view = SpeckView.create(speck, col, row)
+      val view = new SpeckView
       view.onClick(handleSpeckClick)
       root.children add view.root
+      view render SpeckView.Data(speck, col, row)
       speckViews put (speck, view)
       created add speck
     }

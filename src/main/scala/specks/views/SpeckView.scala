@@ -5,7 +5,7 @@ import scalafx.Includes._
 import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.geometry.Insets
 import scalafx.scene.control.Label
-import scalafx.scene.layout.{Background, BackgroundFill, CornerRadii, FlowPane, Pane, StackPane}
+import scalafx.scene.layout.{Background, BackgroundFill, CornerRadii, Pane, StackPane}
 import scalafx.scene.input.MouseEvent
 import scalafx.scene.paint.Color
 import scalafx.scene.text.Font
@@ -44,15 +44,13 @@ object SpeckView {
 
   def getYPos(data: SpeckView.Data): Double =
     SpecksView.PADDING + (SpeckView.HEIGHT + SpecksView.SPECK_MARGIN) * data.row
-
-  def create(speck: Speck, col: Int, row: Int): SpeckView = new SpeckView(Data(speck, col, row))
 }
 
-class SpeckView(initial: SpeckView.Data)
-  extends BaseView[SpeckView.Data, Pane] {
+class SpeckView
+  extends BaseView[SpeckView.Data, Pane](SpeckView.INITIAL_DATA) {
 
-  private val labelTextProp = StringProperty(SpeckView.getLabel(initial))
-  private val backgroundProp = ObjectProperty(SpeckView.getBackground(initial))
+  private val labelTextProp = StringProperty(SpeckView.getLabel(data))
+  private val backgroundProp = ObjectProperty(SpeckView.getBackground(data))
   private val label = new Label() {
     font = new Font(48)
     textFill = Color.White
@@ -67,21 +65,17 @@ class SpeckView(initial: SpeckView.Data)
   }
   private var clickHandler: Option[Speck => Unit] = None
 
-  private var data = SpeckView.INITIAL_DATA
-
   private var currentTransition: Option[TranslateTransition] = None
 
   val root: Pane = pane
 
-  render(initial)
-
-  def render(next: SpeckView.Data): Unit = if (data != next) {
+  override def render(next: SpeckView.Data): Unit = if (data != next) {
     translate(next)
 
     labelTextProp() = SpeckView.getLabel(next)
     backgroundProp() = SpeckView.getBackground(next)
 
-    data = next
+    super.render(next)
   }
 
   def onClick(handler: Speck => Unit): Unit =

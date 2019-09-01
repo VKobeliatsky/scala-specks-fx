@@ -9,7 +9,9 @@ import scalafx.scene._
 
 object Main extends JFXApp {
   private val model = new SpecksModel(4, 4)
-  private val view = new SpecksView(model)
+  private val view = new SpecksView
+
+  view.render(model)
 
   view.onClick {
     case speck@Value(_) =>
