@@ -1,11 +1,11 @@
 package specks.views
 
 import specks.models._
+import javafx.scene.{layout => jfxsl}
 import scalafx.Includes._
-import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.geometry.Insets
 import scalafx.scene.control.Label
-import scalafx.scene.layout.{Background, BackgroundFill, CornerRadii, Pane, StackPane}
+import scalafx.scene.layout.{Background, BackgroundFill, Border, CornerRadii, Pane, StackPane}
 import scalafx.scene.input.MouseEvent
 import scalafx.scene.paint.Color
 import scalafx.scene.text.Font
@@ -25,14 +25,15 @@ object SpeckView {
     row: Int
   )
 
-  def getBackground(data: Data): Background = data match {
-    case Data(Value(_), _, _) => new Background(
-      Array(new BackgroundFill(
-        Color.Green, CornerRadii.Empty, Insets.Empty
-      ))
-    )
-    case _ => Background.Empty
-  }
+  def getBackground(data: Data): jfxsl.Background = Background
+    .sfxBackground2jfx(data match {
+      case Data(Value(_), _, _) => new Background(
+        Array(new BackgroundFill(
+          Color.Green, CornerRadii.Empty, Insets.Empty
+        ))
+      )
+      case _ => Background.Empty
+    })
 
   def getLabel(data: SpeckView.Data): String = data match {
     case SpeckView.Data(Value(value), _, _) => value.toString
@@ -46,72 +47,65 @@ object SpeckView {
     SpecksView.PADDING + (SpeckView.HEIGHT + SpecksView.SPECK_MARGIN) * data.row
 }
 
-class SpeckView
+final class SpeckView
   extends BaseView[SpeckView.Data, Pane](SpeckView.INITIAL_DATA) {
 
-  private val labelTextProp = StringProperty(SpeckView.getLabel(data))
-  private val backgroundProp = ObjectProperty(SpeckView.getBackground(data))
   private val label = new Label() {
     font = new Font(48)
     textFill = Color.White
-    text <== labelTextProp
+    text <== mapData(SpeckView.getLabel)
   }
+
   private val pane = new StackPane() {
     prefWidth = SpeckView.WIDTH
     prefHeight = SpeckView.HEIGHT
-    background <== backgroundProp
+    background <== mapData(SpeckView.getBackground)
     children = label
     onMouseClicked = handleClick
   }
+
   private var clickHandler: Option[Speck => Unit] = None
 
   private var currentTransition: Option[TranslateTransition] = None
 
   val root: Pane = pane
 
-  override def render(next: SpeckView.Data): Unit = if (data != next) {
-    translate(next)
-
-    labelTextProp() = SpeckView.getLabel(next)
-    backgroundProp() = SpeckView.getBackground(next)
-
-    super.render(next)
-  }
+  listenData(translate)
 
   def onClick(handler: Speck => Unit): Unit =
     clickHandler = Option(handler)
 
   override def unmount(): Unit = {
-    currentTransition foreach {transition => transition.stop()}
-    pane.onMouseClicked = null
+    currentTransition foreach { transition => transition.stop() }
+    clickHandler = None
   }
 
-  private def translate(next: SpeckView.Data): Unit = {
-    val nextTransition = ensureTransition
+  private def translate(
+    from: SpeckView.Data,
+    to: SpeckView.Data
+  ): Unit = if (from != to) {
+    val transition = ensureTransition
 
-    nextTransition.stop()
+    transition.stop()
 
-    nextTransition.toX = SpeckView.getXPos(next)
-    nextTransition.toY = SpeckView.getYPos(next)
+    transition.fromX = SpeckView.getXPos(from)
+    transition.fromY = SpeckView.getYPos(from)
 
-    nextTransition.play()
+    transition.toX = SpeckView.getXPos(to)
+    transition.toY = SpeckView.getYPos(to)
 
-    currentTransition = Some(nextTransition)
+    transition.play()
+
+    currentTransition = Some(transition)
   }
 
   private def handleClick(e: MouseEvent): Unit =
     if (currentTransition.isEmpty) for {
       handler <- clickHandler
-    } handler(data.speck)
+    } handler(data().speck)
 
-  private def ensureTransition: TranslateTransition = {
-    val transition = currentTransition getOrElse newTransition
-
-    transition.onFinished = _ => currentTransition = None
-    currentTransition = Some(transition)
-
-    transition
-  }
+  private def ensureTransition: TranslateTransition =
+    currentTransition getOrElse newTransition
 
   private def newTransition: TranslateTransition = {
     val transition = new TranslateTransition(
@@ -119,8 +113,8 @@ class SpeckView
       pane
     )
 
-    transition.fromX = SpeckView.getXPos(data)
-    transition.fromY = SpeckView.getYPos(data)
+    currentTransition = Option(transition)
+    transition.onFinished = _ => currentTransition = None
 
     transition
   }

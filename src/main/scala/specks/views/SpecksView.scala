@@ -1,7 +1,8 @@
 package specks.views
 
-import scalafx.scene.layout.Pane
 import specks.models._
+
+import scalafx.scene.layout.Pane
 
 import scala.collection._
 import scala.language.implicitConversions
@@ -9,10 +10,10 @@ import scala.language.implicitConversions
 object SpecksView {
 
   case class Data(
-                   specks: Seq[SpeckWithPosition],
-                   width: Int,
-                   height: Int
-                 )
+    specks: Seq[SpeckWithPosition],
+    width: Int,
+    height: Int
+  )
 
   object Data {
     implicit def fromModel(model: SpecksModel): Data =
@@ -38,24 +39,23 @@ object SpecksView {
 }
 
 final class SpecksView
-  extends BaseView [SpecksView.Data, Pane](SpecksView.INITIAL_DATA) {
+  extends BaseView[SpecksView.Data, Pane](SpecksView.INITIAL_DATA) {
 
   private var clickHandler: Option[Speck => Unit] = None
 
   val root: Pane = new Pane
   val speckViews: mutable.Map[Speck, SpeckView] = mutable.Map()
 
-  override def render(next: SpecksView.Data): Unit = {
-    setSize(next)
-    updateSpeckViews(next)
-    super.render(next)
-  }
+  listenData({ (_, next) => setSize(next) })
+  listenData({ (_, next) => updateSpeckViews(next) })
 
   def onClick(handler: Speck => Unit): Unit =
     clickHandler = Option(handler)
 
-  override def unmount(): Unit =
+  override def unmount(): Unit = {
     for (view <- speckViews.values) view.unmount()
+    super.unmount()
+  }
 
   private def setSize(next: SpecksView.Data): Unit =
     root.setPrefSize(
@@ -80,7 +80,7 @@ final class SpecksView
       view.onClick(handleSpeckClick)
       root.children add view.root
       view render SpeckView.Data(speck, col, row)
-      speckViews put (speck, view)
+      speckViews put(speck, view)
       created add speck
     }
 
@@ -93,7 +93,7 @@ final class SpecksView
   }
 
   private def handleSpeckClick(speck: Speck): Unit = {
-    clickHandler foreach {f => f(speck)}
+    clickHandler foreach { f => f(speck) }
   }
 }
 

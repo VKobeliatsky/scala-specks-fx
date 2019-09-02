@@ -2,7 +2,6 @@ package specks
 
 import specks.models._
 import specks.views._
-import scalafx.Includes._
 import scalafx.application.JFXApp.PrimaryStage
 import scalafx.application._
 import scalafx.scene._
