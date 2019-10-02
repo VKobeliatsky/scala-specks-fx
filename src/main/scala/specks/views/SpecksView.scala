@@ -1,7 +1,6 @@
 package specks.views
 
 import specks.models._
-
 import scalafx.scene.layout.Pane
 
 import scala.collection._
@@ -46,8 +45,8 @@ final class SpecksView
   val root: Pane = new Pane
   val speckViews: mutable.Map[Speck, SpeckView] = mutable.Map()
 
-  listenData({ (_, next) => setSize(next) })
-  listenData({ (_, next) => updateSpeckViews(next) })
+  onDataChange(setSize)
+  onDataChange(updateSpeckViews)
 
   def onClick(handler: Speck => Unit): Unit =
     clickHandler = Option(handler)
@@ -57,18 +56,18 @@ final class SpecksView
     super.unmount()
   }
 
-  private def setSize(next: SpecksView.Data): Unit =
+  private def setSize: ChangeHandler = (_, to) =>
     root.setPrefSize(
-      SpecksView.getWidth(next),
-      SpecksView.getHeight(next)
+      SpecksView.getWidth(to),
+      SpecksView.getHeight(to)
     )
 
-  private def updateSpeckViews(next: SpecksView.Data): Unit = {
+  private def updateSpeckViews: ChangeHandler = (_, to) => {
     val updated: mutable.Set[Speck] = mutable.Set()
     val created: mutable.Set[Speck] = mutable.Set()
 
     for (
-      (speck, col, row) <- next.specks
+      (speck, col, row) <- to.specks
     ) if (
       speckViews contains speck
     ) {

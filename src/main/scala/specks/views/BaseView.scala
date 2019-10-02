@@ -11,10 +11,11 @@ import scala.collection.mutable
 abstract class BaseView[Data, Root <: Parent](default: Data) {
 
 
-  private type Action[T] = (T, T) => Unit
+  type ChangeHandler = (Data, Data) => Unit
 
 
-  val data: ObjectProperty[Data] = ObjectProperty(default)
+  private val _data: ObjectProperty[Data] = ObjectProperty(default)
+  def data: Data = _data()
 
 
   protected val subscriptions: mutable.Set[Subscription] = mutable.Set[Subscription]()
@@ -24,18 +25,19 @@ abstract class BaseView[Data, Root <: Parent](default: Data) {
 
 
   def mapData[T](map: Data => T): ObjectProperty[T] = {
-    val property = ObjectProperty(map(data()))
-    listenData({ (_, next) => property() = map(next) })
+    val property = ObjectProperty(map(data))
+    onDataChange({ (_, next) => property() = map(next) })
     property
   }
 
 
-  def listenData(action: Action[Data]): Unit = listen(data, action)
+  def onDataChange(handler: ChangeHandler): Unit = listen(_data, handler)
 
 
   def render(next: Data): Unit = {
-    data() = next
+    _data() = next
   }
+
 
   def unmount(): Unit = {
     subscriptions foreach {
@@ -44,9 +46,10 @@ abstract class BaseView[Data, Root <: Parent](default: Data) {
   }
 
 
-  private def listen[T](
-    value: ObservableValue[T, T],
-    action: Action[T]
+  private def listen(
+    value: ObservableValue[Data, Data],
+    action: ChangeHandler
   ): Unit =
-    subscriptions add value.onChange((_, current, next) => action(current, next))
+    subscriptions add value.onChange((_, from, to) => action(from, to))
+
 }

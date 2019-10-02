@@ -5,7 +5,7 @@ import javafx.scene.{layout => jfxsl}
 import scalafx.Includes._
 import scalafx.geometry.Insets
 import scalafx.scene.control.Label
-import scalafx.scene.layout.{Background, BackgroundFill, Border, CornerRadii, Pane, StackPane}
+import scalafx.scene.layout.{Background, BackgroundFill, CornerRadii, Pane, StackPane}
 import scalafx.scene.input.MouseEvent
 import scalafx.scene.paint.Color
 import scalafx.scene.text.Font
@@ -70,7 +70,7 @@ final class SpeckView
 
   val root: Pane = pane
 
-  listenData(translate)
+  onDataChange(translate)
 
   def onClick(handler: Speck => Unit): Unit =
     clickHandler = Option(handler)
@@ -102,7 +102,7 @@ final class SpeckView
   private def handleClick(e: MouseEvent): Unit =
     if (currentTransition.isEmpty) for {
       handler <- clickHandler
-    } handler(data().speck)
+    } handler(data.speck)
 
   private def ensureTransition: TranslateTransition =
     currentTransition getOrElse newTransition
